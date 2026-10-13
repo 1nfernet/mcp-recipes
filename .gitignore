@@ -1,0 +1,2 @@
+# 개인 키워드 차단 목록 (저장소에 올리지 않음. scripts/check.py 가 읽음)
+.check-blocklist.local
