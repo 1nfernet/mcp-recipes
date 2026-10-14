@@ -26,7 +26,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-THREADS_LIMIT = 500
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from threads_text import LIMIT as THREADS_LIMIT, threads_len  # noqa: E402  (이모지는 바이트로 세는 한도 계산)
+
 BLOCKLIST_FILE = ".check-blocklist.local"
 ALLOWED_EMAIL_DOMAINS = {"users.noreply.github.com", "example.com", "example.org"}
 # 도메인 전체가 아니라 정확한 주소만 허용한다 (커밋 메시지의 공동 작성자 표기용 공개 noreply 주소)
@@ -146,8 +148,9 @@ def check_posts(root: Path) -> None:
                 err(f"{label}: 게시 본문(코드 블록)을 찾지 못했습니다")
                 continue
             n = len(block)
-            if n > THREADS_LIMIT:
-                err(f"{label}: 본문이 {n}자로 {THREADS_LIMIT}자 제한을 넘습니다")
+            limit_n = threads_len(block)  # 이모지는 UTF-8 바이트로 센 값(보수적)
+            if limit_n > THREADS_LIMIT:
+                err(f"{label}: 본문이 Threads 기준 {limit_n}로 {THREADS_LIMIT} 제한을 넘습니다 (이모지는 바이트로 셈)")
             m = re.search(r"글자 수:\s*(\d+)자", text)
             if m and int(m.group(1)) != n:
                 warn(f"{label}: 표기된 글자 수({m.group(1)}자)와 실제({n}자)가 다릅니다")
@@ -157,8 +160,8 @@ def check_posts(root: Path) -> None:
         label = f"posts/{path.name}"
         blocks = all_code_blocks(text)
         for i, b in enumerate(blocks, 1):
-            if len(b) > THREADS_LIMIT:
-                err(f"{label}: {i}번째 글이 {len(b)}자로 {THREADS_LIMIT}자 제한을 넘습니다")
+            if threads_len(b) > THREADS_LIMIT:
+                err(f"{label}: {i}번째 글이 Threads 기준 {threads_len(b)}로 {THREADS_LIMIT} 제한을 넘습니다")
         check_brand_spelling(label, blocks)
 
 
